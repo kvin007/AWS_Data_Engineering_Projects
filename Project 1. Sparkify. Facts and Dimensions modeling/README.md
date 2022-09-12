@@ -28,8 +28,8 @@ The following JSON data regarding songs and user activity on the app was given a
 	- **log_data**: which consists on event simulated data applied to the previous songs dataset (this is based on this project https://github.com/Interana/eventsim).
 		
 		This is also composed by a list of directories, but this time partitioned by the year and date of the event. For this dataset, we have the following structure:
-	
-
+		![Log data sample](log_data_sample.png)
+		
 ## How to run the scripts?
 
 This repository contains the following files explained below:
