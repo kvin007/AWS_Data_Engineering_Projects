@@ -4,7 +4,7 @@ import os
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import udf, col, desc, row_number
 from pyspark.sql.functions import year, month, dayofmonth, hour, weekofyear, date_format
-from pyspark.sql.types import DateType
+from pyspark.sql.types import IntegerType, DateType
 from pyspark.sql.window import Window
 
 config = configparser.ConfigParser()
@@ -67,7 +67,7 @@ def process_log_data(spark, input_data, output_data):
     users_table.write.mode("overwrite").parquet(output_data + 'users_table')
 
     # create timestamp column from original timestamp column
-    get_timestamp = udf(lambda ts_ms: int(int(ts_ms) / 1000))
+    get_timestamp = udf(lambda ts_ms: int(int(ts_ms) / 1000), IntegerType())
     df = df.withColumn("timestamp", get_timestamp(col('ts')))
 
     # create datetime column from original timestamp column
@@ -93,7 +93,7 @@ def process_log_data(spark, input_data, output_data):
 
     # extract columns from joined song and log datasets to create songplays table
     songplays_table = df.join(song_df, (df.song == song_df.title) & (df.artist == song_df.artist_name) & (df.length == song_df.duration), 'left') \
-        .selectExpr('date as start_time', 'userId as user_id', 'level','song_id', 'artist_id', 'sessionId as session_id', 
+        .selectExpr('timestamp as start_time', 'userId as user_id', 'level','song_id', 'artist_id', 'sessionId as session_id', 
                     'location', 'userAgent as user_agent', 'year(date) as year', 'month(date) as month')
 
     # write songplays table to parquet files partitioned by year and month
