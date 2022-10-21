@@ -81,7 +81,7 @@ class SqlQueries:
         );
     """
 
-    time_table_create_statement = """
+    time_table_create = """
         CREATE TABLE IF NOT EXISTS public.time (
             start_time timestamp primary key,
             hour int,
@@ -96,42 +96,40 @@ class SqlQueries:
     # Insert statements
 
     songplays_table_insert = """
-        INSERT INTO songplays (songplay_id, start_time, user_id, level, song_id, artist_id, session_id, location, user_agent)    
-        SELECT
-                md5(events.sessionid || events.start_time) songplay_id,
-                events.start_time, 
-                events.userid, 
-                events.level, 
-                songs.song_id, 
-                songs.artist_id, 
-                events.sessionid, 
-                events.location, 
-                events.useragent
-                FROM (SELECT TIMESTAMP 'epoch' + ts/1000 * interval '1 second' AS start_time, *
-            FROM staging_events
-            WHERE page='NextSong') events
-            LEFT JOIN staging_songs songs
-            ON events.song = songs.title
-                AND events.artist = songs.artist_name
-                AND events.length = songs.duration
+        INSERT INTO songplays (start_time, user_id, level, song_id, artist_id, session_id, location, user_agent)    
+        SELECT TIMESTAMP 'epoch' + ts/1000 * interval '1 second' as start_time,
+        userId,
+        level,
+        s.song_id,
+        s.artist_id,
+        sessionId,
+        location,
+        userAgent
+        FROM staging_events e
+        LEFT JOIN staging_songs s ON e.song = s.title AND e.artist = s.artist_name AND e.length = s.duration
+        WHERE page = 'NextSong'
     """
 
     user_table_insert = """
-        INSERT INTO users (user_id, first_name, last_name, gender, level)    
-        SELECT distinct userid, firstname, lastname, gender, level
-        FROM staging_events
-        WHERE page='NextSong'
+        INSERT INTO users (user_id, first_name, last_name, gender, level)
+        SELECT userId, firstName, lastName, gender, level
+        FROM (
+          SELECT ROW_NUMBER() OVER (PARTITION BY userId ORDER BY ts DESC) AS last_user_event, userId, firstName, lastName, gender, level
+          FROM staging_events
+          WHERE page = 'NextSong'
+        )
+        WHERE last_user_event = 1
     """
 
     song_table_insert = """
-        INSERT INTO songs (song_id, title, artist_id, year, duration)    
-        SELECT distinct song_id, title, artist_id, year, duration
+        INSERT INTO songs (song_id, title, artist_id, year, duration)
+        SELECT DISTINCT song_id, title, artist_id, year, duration
         FROM staging_songs
     """
 
     artist_table_insert = """
-        INSERT INTO artists (artist_id, name, location, latitude, longitude)    
-        SELECT distinct artist_id, artist_name, artist_location, artist_latitude, artist_longitude
+        INSERT INTO artists (artist_id, name, location, latitude, longitude)
+        SELECT DISTINCT artist_id, artist_name, artist_location, artist_latitude, artist_longitude
         FROM staging_songs
     """
 
@@ -171,5 +169,5 @@ class SqlQueries:
     check_null_artist_name = """
         SELECT COUNT(*)
         FROM artists
-        WHERE artist IS NULL
+        WHERE name IS NULL
     """

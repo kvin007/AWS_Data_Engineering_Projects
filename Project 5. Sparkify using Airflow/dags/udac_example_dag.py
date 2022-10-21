@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 import os
 from airflow import DAG
 from airflow.operators.dummy_operator import DummyOperator
-from airflow.operators import StageToRedshiftOperator, LoadFactOperator, LoadDimensionOperator, DataQualityOperator
+from airflow.operators import (StageToRedshiftOperator, LoadFactOperator, LoadDimensionOperator, DataQualityOperator)
 from helpers import SqlQueries
 from collections import namedtuple
 
@@ -14,6 +14,7 @@ DataQualityTuple = namedtuple('DataQualityTuple', ['sql_statement', 'expected_re
 
 default_args = {
     'owner': 'udacity',
+    'catchup_by_default': False,
     'start_date': datetime(2019, 1, 12),
     'depends_on_past': False,
     'retries': 3,
@@ -25,7 +26,6 @@ dag = DAG('udac_example_dag',
           default_args=default_args,
           description='Load and transform data in Redshift with Airflow',
           schedule_interval='0 * * * *',
-          catchup=False,
           )
 
 start_operator = DummyOperator(task_id='Begin_execution', dag=dag)
@@ -58,13 +58,15 @@ load_songplays_table = LoadFactOperator(
     dag=dag,
     target_database_conn_id="redshift",
     target_table="songplays",
+    create_statement = SqlQueries.songplays_table_create,
+    insert_statement = SqlQueries.songplays_table_insert,
 )
 
 load_user_dimension_table = LoadDimensionOperator(
     task_id='Load_user_dim_table',
     dag=dag,
     target_database_conn_id="redshift",
-    target_table="songplays",
+    target_table="users",
     create_statement=SqlQueries.user_table_create,
     insert_statement=SqlQueries.user_table_insert,
     insert_mode="truncate"
@@ -74,7 +76,7 @@ load_song_dimension_table = LoadDimensionOperator(
     task_id='Load_song_dim_table',
     dag=dag,
     target_database_conn_id="redshift",
-    target_table="songplays",
+    target_table="songs",
     create_statement=SqlQueries.song_table_create,
     insert_statement=SqlQueries.song_table_insert,
     insert_mode="truncate"
@@ -84,7 +86,7 @@ load_artist_dimension_table = LoadDimensionOperator(
     task_id='Load_artist_dim_table',
     dag=dag,
     target_database_conn_id="redshift",
-    target_table="songplays",
+    target_table="artists",
     create_statement=SqlQueries.artist_table_create,
     insert_statement=SqlQueries.artist_table_insert,
     insert_mode="truncate"
@@ -94,7 +96,7 @@ load_time_dimension_table = LoadDimensionOperator(
     task_id='Load_time_dim_table',
     dag=dag,
     target_database_conn_id="redshift",
-    target_table="songplays",
+    target_table="time",
     create_statement=SqlQueries.time_table_create,
     insert_statement=SqlQueries.time_table_insert,
     insert_mode="truncate"
