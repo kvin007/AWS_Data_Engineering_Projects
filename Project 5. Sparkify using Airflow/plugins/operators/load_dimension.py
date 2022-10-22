@@ -12,7 +12,7 @@ class LoadDimensionOperator(BaseOperator):
                  target_table="",
                  create_statement="",
                  insert_statement="",
-                 insert_mode="truncate",
+                 insert_mode="recreate",
                  *args, **kwargs):
         super(LoadDimensionOperator, self).__init__(*args, **kwargs)
         self.target_database_conn_id = target_database_conn_id
@@ -24,12 +24,12 @@ class LoadDimensionOperator(BaseOperator):
     def execute(self, context):
         database_conn = PostgresHook(postgres_conn_id=self.target_database_conn_id)
 
-        self.log.info('Creating the table if not exists with statement')
-        database_conn.run(self.create_statement)
-
-        self.log.info(f'The insert mode is {self.insert_mode}')
-        if self.insert_mode == "truncate":
-            database_conn.run(f"TRUNCATE TABLE {self.target_table}")
+        self.log.info(f'The insert mode is {self.insert_mode}')        
+        
+        if self.insert_mode == "recreate":
+            database_conn.run(f"DROP TABLE IF EXISTS {self.target_table}")
+            self.log.info('Creating the table if not exists with statement')
+            database_conn.run(self.create_statement)
 
         self.log.info(f'Appending the data into the Fact {self.target_table}')
         database_conn.run(self.insert_statement)
