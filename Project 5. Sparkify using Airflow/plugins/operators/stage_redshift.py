@@ -23,7 +23,6 @@ class StageToRedshiftOperator(BaseOperator):
                  redshift_conn_id='redshift',
                  aws_credentials_id="aws_credentials",
                  target_table="",
-                 create_statement="",
                  s3_bucket="",
                  s3_bucket_region = "",
                  s3_key="",
@@ -33,7 +32,6 @@ class StageToRedshiftOperator(BaseOperator):
         self.redshift_conn_id = redshift_conn_id
         self.aws_credentials_id = aws_credentials_id
         self.target_table = target_table
-        self.create_statement = create_statement
         self.s3_bucket = s3_bucket
         self.s3_bucket_region = s3_bucket_region
         self.s3_key = s3_key
@@ -43,12 +41,6 @@ class StageToRedshiftOperator(BaseOperator):
         aws_hook = AwsHook(self.aws_credentials_id)
         credentials = aws_hook.get_credentials()
         redshift = PostgresHook(postgres_conn_id=self.redshift_conn_id)
-
-        self.log.info(f"Dropping table {self.target_table} in case exists")
-        redshift.run(f"DROP TABLE IF EXISTS {self.target_table}")
-
-        self.log.info("Creating the table with statement")
-        redshift.run(self.create_statement)
 
         self.log.info("Copying data from S3 to Redshift")
         rendered_key = self.s3_key.format(**context)

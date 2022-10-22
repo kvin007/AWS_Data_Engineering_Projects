@@ -19,7 +19,7 @@ default_args = {
     'depends_on_past': False,
     'retries': 3,
     'retry_delay': timedelta(minutes=5),
-    'email_on_retry': False,
+    'email_on_retry': True,
 }
 
 dag = DAG('udac_example_dag',
@@ -37,9 +37,8 @@ stage_events_to_redshift = StageToRedshiftOperator(
     aws_connection_id="aws_credentials",
     redshift_conn_id="redshift",
     target_table="staging_events",
-    create_statement=SqlQueries.staging_events_table_create,
     s3_bucket="udacity-dend",
-    s3_bucket_region = 'us-west-2',
+    s3_bucket_region = "us-west-2",
     s3_key="log_data",
     s3_key_json_path="log_json_path.json"
 )
@@ -50,9 +49,8 @@ stage_songs_to_redshift = StageToRedshiftOperator(
     aws_connection_id="aws_credentials",
     redshift_conn_id="redshift",
     target_table="staging_songs",
-    create_statement=SqlQueries.staging_songs_table_create,
     s3_bucket="udacity-dend",
-    s3_bucket_region = 'us-west-2',
+    s3_bucket_region = "us-west-2",
     s3_key="song_data"
 )
 
@@ -61,8 +59,7 @@ load_songplays_table = LoadFactOperator(
     dag=dag,
     target_database_conn_id="redshift",
     target_table="songplays",
-    create_statement = SqlQueries.songplays_table_create,
-    insert_statement = SqlQueries.songplays_table_insert,
+    insert_statement = SqlQueries.songplay_table_insert,
 )
 
 load_user_dimension_table = LoadDimensionOperator(
@@ -70,9 +67,8 @@ load_user_dimension_table = LoadDimensionOperator(
     dag=dag,
     target_database_conn_id="redshift",
     target_table="users",
-    create_statement=SqlQueries.user_table_create,
     insert_statement=SqlQueries.user_table_insert,
-    insert_mode="recreate"
+    insert_mode="truncate"
 )
 
 load_song_dimension_table = LoadDimensionOperator(
@@ -80,9 +76,8 @@ load_song_dimension_table = LoadDimensionOperator(
     dag=dag,
     target_database_conn_id="redshift",
     target_table="songs",
-    create_statement=SqlQueries.song_table_create,
     insert_statement=SqlQueries.song_table_insert,
-    insert_mode="recreate"
+    insert_mode="truncate"
 )
 
 load_artist_dimension_table = LoadDimensionOperator(
@@ -90,9 +85,8 @@ load_artist_dimension_table = LoadDimensionOperator(
     dag=dag,
     target_database_conn_id="redshift",
     target_table="artists",
-    create_statement=SqlQueries.artist_table_create,
     insert_statement=SqlQueries.artist_table_insert,
-    insert_mode="recreate"
+    insert_mode="truncate"
 )
 
 load_time_dimension_table = LoadDimensionOperator(
@@ -100,9 +94,8 @@ load_time_dimension_table = LoadDimensionOperator(
     dag=dag,
     target_database_conn_id="redshift",
     target_table="time",
-    create_statement=SqlQueries.time_table_create,
     insert_statement=SqlQueries.time_table_insert,
-    insert_mode="recreate"
+    insert_mode="truncate"
 )
 
 run_quality_checks = DataQualityOperator(
